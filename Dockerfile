@@ -6,3 +6,4 @@ RUN apt update && \
 
 COPY ./entrypoint.sh /
 ENTRYPOINT ["/entrypoint.sh"]
+CMD ["/public-keys"]

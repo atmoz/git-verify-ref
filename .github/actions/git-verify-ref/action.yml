@@ -1,0 +1,6 @@
+name: Verify signatures
+description: Verify GPG signed commits and tags
+
+runs:
+  using: docker
+  image: Dockerfile

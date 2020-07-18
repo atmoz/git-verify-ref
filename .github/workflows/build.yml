@@ -29,9 +29,7 @@ jobs:
             --label="org.opencontainers.image.created=$(date --rfc-3339=seconds)"
 
       - name: Test action
-        uses: ./
-        with:
-          public_key_dir: public-keys
+        uses: ./.github/actions/git-verify-ref
 
       - name: Push images to Docker Hub registry
         if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
