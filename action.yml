@@ -1,0 +1,27 @@
+name: 'Verify git ref'
+description: 'Verify GPG signed commits or tags'
+
+inputs:
+
+  import-dir:
+    description: "Path to directory with public keys to import"
+
+  import-github-users:
+    description: "List of GitHub users to retrieve public keys from, one per line"
+
+  ref:
+    description: "Git reference (HEAD, master, tag, ...)"
+    default: HEAD
+
+  num-required:
+    description: "Number of required signatures"
+    default: 1
+
+runs:
+  using: docker
+  image: docker://atmoz/git-verify-ref
+  args:
+    - ${{ inputs.import-dir}}
+    - ${{ inputs.import-github-users }}
+    - ${{ inputs.ref }}
+    - ${{ inputs.num-required }}
