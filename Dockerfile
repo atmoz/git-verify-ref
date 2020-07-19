@@ -1,7 +1,7 @@
 FROM debian:buster-slim
 
-RUN apt update && \
-    apt install -y git gnupg && \
+RUN apt-get update -q && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -qq git gnupg curl jq && \
     rm -rf /var/lib/apt/lists/*
 
 COPY ./entrypoint.sh /

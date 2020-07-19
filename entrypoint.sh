@@ -1,63 +1,76 @@
 #!/bin/bash
 
 # Path to directory with public keys to import
-public_key_dir="$1"
+import_dir="$1"
+
+# Comma-separated list of GitHub users to retrieve public keys from
+import_github_users="$2"
 
 # Git reference
-ref="${2:-HEAD}"
+ref="${3:-HEAD}"
 
 # Number of required signatures
-num_required="${3:-"1"}"
+num_required="${4:-"1"}"
 
 # Options passed to git
-git_options="${*:4}"
+git_options="${*:5}"
 
 # Temporary list of verified keys
 result_file="$(mktemp)"
+
 add_result() {
     tee /dev/stderr | grep "Primary key fingerprint" >> "$result_file"
 }
 
 log() {
-    echo -e ">>> $*" >&2
+    echo "$*" >&2
 }
 
-log_space() {
-    echo -e "\n>>> $*\n" >&2
+log_header() {
+    echo -e "\n$*" >&2
 }
 
-# Get SHA and tags (if any)
-sha="$(git rev-parse --verify "$ref")"
-tags="$(git tag --points-at "$sha")"
+import_from_dir() {
+    log_header "Importing public keys from $1"
+    find "$1" -type f -exec gpg --import --keyid LONG {} +
+}
 
-if [ -z "$sha" ]; then
-    log "Not a valid git reference: $ref"
-    exit 1
-fi
+import_from_github_user() {
+    log_header "Importing public keys from GitHub user $1"
+    curl -s "https://api.github.com/users/$1/gpg_keys" \
+        | jq --raw-output '.[].raw_key' \
+        | gpg --import
+}
 
-if [ -z "$public_key_dir" ]; then
-    log "Missing public_key_dir argument"
-    exit 1
-fi
+verify_ref() {
+    ref="$1"
+    sha="$(git rev-parse --verify "$ref")"
+    tags="$(git tag --points-at "$sha")"
 
-
-log_space "Importing public keys"
-find "$public_key_dir" -type f -exec gpg --import --keyid LONG {} +
-
-log_space "Checking commit: $sha"
-# shellcheck disable=SC2086
-git $git_options verify-commit "$sha" 2>&1 | add_result
-
-for tag in $tags; do
-    log_space "Checking tag: $tag"
+    log_header "Checking commit: $sha"
     # shellcheck disable=SC2086
-    git $git_options verify-tag "$tag" 2>&1 | add_result
-done
+    git $git_options verify-commit "$sha" 2>&1 | add_result
 
-echo # newline
+    for tag in $tags; do
+        log_header "Checking tag: $tag"
+        # shellcheck disable=SC2086
+        git $git_options verify-tag "$tag" 2>&1 | add_result
+    done
+}
+
+
+if [ -e "$import_dir" ]; then
+    import_from_dir "$import_dir"
+fi
+
+while read -r user; do
+    import_from_github_user "$user"
+done <<< "$import_github_users"
+
+verify_ref "$ref"
 
 num_uniq="$(uniq "$result_file" | wc -l)"
-log "Result: verified $num_uniq unique signatures ($num_required is required)"
+log_header "Result: verified $num_uniq unique signatures ($num_required is required)"
 
 if [ "$num_uniq" -lt "$num_required" ]; then
     log "Verification failed"

@@ -3,26 +3,25 @@ description: 'Verify GPG signed commits or tags'
 
 inputs:
 
-  public_key_dir:
+  import-dir:
     description: "Path to directory with public keys to import"
-    required: true
+
+  import-github-users:
+    description: "Comma-separated list of GitHub users to retrieve public keys from"
 
   ref:
     description: "Git reference (HEAD, master, tag, ...)"
     default: HEAD
 
-  num_required:
+  num-required:
     description: "Number of required signatures"
     default: 1
-
-  git_options:
-    description: "Options passed to git"
 
 runs:
   using: docker
   image: docker://atmoz/git-verify-ref
   args:
-    - ${{ inputs.public_key_dir }}
+    - ${{ inputs.import-dir}}
+    - ${{ inputs.import-github-users }}
     - ${{ inputs.ref }}
-    - ${{ inputs.num_required }}
-    - ${{ inputs.git_options }}
+    - ${{ inputs.num-required }}
