@@ -19,7 +19,7 @@ inputs:
 
 runs:
   using: docker
-  image: docker://atmoz/git-verify-ref
+  image: docker://atmoz/git-verify-ref:1
   args:
     - ${{ inputs.import-dir}}
     - ${{ inputs.import-github-users }}
